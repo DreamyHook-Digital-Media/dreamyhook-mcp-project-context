@@ -7,7 +7,7 @@
  * to Claude Code through the Model Context Protocol.
  */
 
-import { createLogger, LogLevel } from '@/utils/logger';
+import { createLogger, LogLevel } from './utils/logger';
 
 const logger = createLogger('MCP-Server', LogLevel.DEBUG);
 
