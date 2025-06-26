@@ -9,9 +9,8 @@
     "ms-vscode.vscode-json",
     "redhat.vscode-yaml",
     "aaron-bond.better-comments",
-    "streetsidesoftware.code-spell-checker"
+    "streetsidesoftware.code-spell-checker",
+    "orta.vscode-jest"
   ],
-  "unwantedRecommendations": [
-    "ms-vscode.vscode-typescript"
-  ]
+  "unwantedRecommendations": ["ms-vscode.vscode-typescript"]
 }
