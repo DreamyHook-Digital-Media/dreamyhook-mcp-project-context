@@ -7,7 +7,12 @@
  * to Claude Code through the Model Context Protocol.
  */
 
-console.log('Project Context MCP Server - Starting...');
+import { createLogger, LogLevel } from '@/utils/logger';
+
+const logger = createLogger('MCP-Server', LogLevel.DEBUG);
+
+logger.info('Project Context MCP Server - Starting...');
+logger.debug('TypeScript path mapping is working correctly');
 
 // TODO: Implement MCP server initialization
 // This will be implemented in subsequent stories
