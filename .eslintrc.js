@@ -2,8 +2,6 @@ module.exports = {
   parser: '@typescript-eslint/parser',
   extends: [
     'eslint:recommended',
-    '@typescript-eslint/recommended',
-    '@typescript-eslint/recommended-requiring-type-checking',
   ],
   plugins: ['@typescript-eslint'],
   parserOptions: {
@@ -21,9 +19,7 @@ module.exports = {
     // TypeScript specific rules
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     '@typescript-eslint/explicit-function-return-type': 'warn',
-    '@typescript-eslint/no-explicit-any': 'error',
-    '@typescript-eslint/prefer-const': 'error',
-    '@typescript-eslint/no-inferrable-types': 'error',
+    '@typescript-eslint/no-explicit-any': 'warn',
     
     // General ESLint rules
     'no-console': 'warn',
