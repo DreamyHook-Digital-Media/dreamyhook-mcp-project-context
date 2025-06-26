@@ -36,7 +36,7 @@
   },
   "homepage": "https://github.com/DreamyHook-Digital-Media/dreamyhook-mcp-project-context#readme",
   "dependencies": {
-    "@anthropic-ai/mcp-sdk": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^0.4.0",
     "simple-git": "^3.20.0",
     "fs-extra": "^11.2.0",
     "fast-glob": "^3.3.2",
