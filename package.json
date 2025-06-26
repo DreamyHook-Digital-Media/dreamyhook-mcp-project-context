@@ -55,6 +55,8 @@
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
     "@types/fs-extra": "^11.0.4",
     "@types/jest": "^29.5.8",
     "@types/js-yaml": "^4.0.9",
@@ -86,10 +88,6 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{js,jsx}": [
       "eslint --fix",
       "prettier --write"
     ],
