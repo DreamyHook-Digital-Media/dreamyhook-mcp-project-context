@@ -129,9 +129,8 @@ out/
 
 # IDE and editor files
 .idea/
-.vscode/settings.json
-.vscode/extensions.json
-!.vscode/launch.json
+!.vscode/
+.vscode/settings.local.json
 *.swp
 *.swo
 *~
