@@ -100,6 +100,7 @@ export function createConsoleSpy() {
   const originalConsole = { ...console };
   const spies = {
     log: jest.spyOn(console, 'log').mockImplementation(),
+    info: jest.spyOn(console, 'info').mockImplementation(),
     error: jest.spyOn(console, 'error').mockImplementation(),
     warn: jest.spyOn(console, 'warn').mockImplementation(),
     debug: jest.spyOn(console, 'debug').mockImplementation(),
