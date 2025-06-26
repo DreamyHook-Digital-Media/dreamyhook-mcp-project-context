@@ -23,7 +23,7 @@
     "typecheck:watch": "tsc --noEmit --watch",
     "format": "prettier --write src/**/*.ts",
     "format:check": "prettier --check src/**/*.ts",
-    "prepare": "npm run build",
+    "prepare": "husky",
     "prepack": "npm run build"
   },
   "keywords": [
@@ -46,30 +46,32 @@
   "homepage": "https://github.com/DreamyHook-Digital-Media/dreamyhook-mcp-project-context#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.4.0",
-    "simple-git": "^3.20.0",
-    "fs-extra": "^11.2.0",
     "fast-glob": "^3.3.2",
+    "fs-extra": "^11.2.0",
     "js-yaml": "^4.1.0",
-    "xml2js": "^0.6.2",
     "lru-cache": "^10.2.0",
-    "module-alias": "^2.2.3"
+    "module-alias": "^2.2.3",
+    "simple-git": "^3.20.0",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
-    "typescript": "^5.3.0",
-    "@types/node": "^20.10.0",
     "@types/fs-extra": "^11.0.4",
-    "@types/js-yaml": "^4.0.9",
-    "@types/xml2js": "^0.4.14",
-    "ts-node": "^10.9.0",
-    "tsx": "^4.7.1",
-    "jest": "^29.7.0",
     "@types/jest": "^29.5.8",
-    "ts-jest": "^29.1.1",
-    "eslint": "^8.55.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.10.0",
+    "@types/xml2js": "^0.4.14",
     "@typescript-eslint/eslint-plugin": "^6.13.0",
     "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.55.0",
+    "husky": "^9.1.7",
+    "jest": "^29.7.0",
+    "lint-staged": "^16.1.2",
     "prettier": "^3.1.0",
-    "rimraf": "^5.0.5"
+    "rimraf": "^5.0.5",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.0",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.0"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -81,5 +83,18 @@
   ],
   "_moduleAliases": {
     "@": "./dist"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
   }
 }
