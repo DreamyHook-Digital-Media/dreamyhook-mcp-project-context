@@ -1,6 +1,6 @@
 {
   "name": "@dreamyhook/project-context-mcp-server",
-  "version": "0.0.1",
+  "version": "0.2.0",
   "description": "MCP server that provides intelligent project context to Claude Code",
   "main": "dist/index.js",
   "bin": {
