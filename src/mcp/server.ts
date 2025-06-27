@@ -26,6 +26,7 @@ import {
 } from './middleware';
 import { ProjectContextResources } from './resources';
 import { ProjectContextTools } from './tools';
+import { ProjectContextPrompts } from './prompts';
 
 export class ProjectContextMCPServer {
   private server: Server;
@@ -33,6 +34,7 @@ export class ProjectContextMCPServer {
   private config: ServerConfig;
   private resources: ProjectContextResources;
   private tools: ProjectContextTools;
+  private prompts: ProjectContextPrompts;
   private isRunning: boolean = false;
 
   constructor(config?: Partial<ServerConfig>) {
@@ -40,6 +42,7 @@ export class ProjectContextMCPServer {
     this.config = new ServerConfig(config);
     this.resources = new ProjectContextResources(this.config);
     this.tools = new ProjectContextTools(this.config);
+    this.prompts = new ProjectContextPrompts(this.config);
 
     // Initialize MCP server
     this.server = new Server({
@@ -208,32 +211,55 @@ export class ProjectContextMCPServer {
 
     // List available prompts
     this.server.setRequestHandler(ListPromptsRequestSchema, async () => {
-      this.logger.debug('Received ListPrompts request');
-      return {
-        prompts: [
-          {
-            name: 'server_status',
-            description: 'Get detailed server status and configuration',
-            arguments: [],
-          },
-        ],
+      const context: MiddlewareContext = {
+        requestId: generateRequestId(),
+        timestamp: new Date(),
+        method: 'ListPrompts',
       };
+
+      return errorHandlingMiddleware(async () => {
+        this.logger.debug(`[${context.requestId}] Received ListPrompts request`);
+
+        const projectPrompts = await this.prompts.listPrompts();
+
+        // Add server status prompt
+        const serverStatusPrompt = {
+          name: 'server_status',
+          description: 'Get detailed server status and configuration',
+          arguments: [],
+        };
+
+        return {
+          prompts: [serverStatusPrompt, ...projectPrompts],
+        };
+      }, context);
     });
 
     // Handle prompt requests
     this.server.setRequestHandler(GetPromptRequestSchema, async request => {
-      this.logger.debug('Received GetPrompt request:', request.params.name);
+      const context: MiddlewareContext = {
+        requestId: generateRequestId(),
+        timestamp: new Date(),
+        method: 'GetPrompt',
+        params: request.params,
+      };
 
-      switch (request.params.name) {
-        case 'server_status':
-          return {
-            description: 'Current server status and configuration',
-            messages: [
-              {
-                role: 'user',
-                content: {
-                  type: 'text',
-                  text: `Server Status Report:
+      return errorHandlingMiddleware(async () => {
+        this.logger.debug(
+          `[${context.requestId}] Received GetPrompt request:`,
+          request.params.name,
+        );
+
+        switch (request.params.name) {
+          case 'server_status':
+            return {
+              description: 'Current server status and configuration',
+              messages: [
+                {
+                  role: 'user',
+                  content: {
+                    type: 'text',
+                    text: `Server Status Report:
 - Name: ${this.config.serverName}
 - Version: ${this.config.serverVersion}
 - Status: ${this.isRunning ? 'Running' : 'Stopped'}
@@ -241,14 +267,24 @@ export class ProjectContextMCPServer {
 - Memory Usage: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB
 - Node.js Version: ${process.version}
 - Start Time: ${this.config.startTime}`,
+                  },
                 },
-              },
-            ],
-          };
+              ],
+            };
 
-        default:
-          throw new Error(`Unknown prompt: ${request.params.name}`);
-      }
+          default: {
+            // Delegate to project prompts
+            const promptResult = await this.prompts.executePrompt(
+              request.params.name,
+              request.params.arguments || {},
+            );
+            return {
+              description: promptResult.description,
+              messages: promptResult.messages,
+            };
+          }
+        }
+      }, context);
     });
 
     this.logger.debug('MCP protocol handlers configured');

@@ -562,7 +562,7 @@ Parameters used:
   ): Promise<{ content: Array<{ type: string; text: string }> }> {
     const {
       path = '',
-      depth = 2,
+      depth: _depth = 2,
       includeFiles = true,
       filterExtensions,
     } = params;
