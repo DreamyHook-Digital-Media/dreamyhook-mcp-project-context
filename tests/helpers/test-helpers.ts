@@ -135,3 +135,16 @@ export async function expectAsyncThrow(
     }
   }
 }
+
+/**
+ * Mock file system operations
+ */
+export function createMockFile(filename: string, content: string): void {
+  const fs = require('fs');
+  fs.readFileSync.mockImplementation((path: string) => {
+    if (path.includes(filename)) {
+      return content;
+    }
+    throw new Error(`File not found: ${path}`);
+  });
+}

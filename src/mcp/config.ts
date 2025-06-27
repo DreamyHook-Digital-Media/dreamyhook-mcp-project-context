@@ -76,7 +76,10 @@ export class ServerConfig {
     return new ServerConfig({
       logLevel: process.env.LOG_LEVEL,
       projectPath: process.env.PROJECT_PATH,
-      cacheEnabled: process.env.CACHE_ENABLED === 'true',
+      cacheEnabled:
+        process.env.CACHE_ENABLED !== undefined
+          ? process.env.CACHE_ENABLED === 'true'
+          : undefined,
       cacheTTL: process.env.CACHE_TTL
         ? parseInt(process.env.CACHE_TTL, 10)
         : undefined,
