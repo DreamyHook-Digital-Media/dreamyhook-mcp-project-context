@@ -18,6 +18,12 @@ import {
 
 import { createLogger, LogLevel } from '../utils/logger';
 import { ServerConfig } from './config';
+import {
+  errorHandlingMiddleware,
+  generateRequestId,
+  MiddlewareContext,
+  NotFoundError,
+} from './middleware';
 
 export class ProjectContextMCPServer {
   private server: Server;
@@ -72,32 +78,45 @@ export class ProjectContextMCPServer {
 
     // Handle tool calls
     this.server.setRequestHandler(CallToolRequestSchema, async request => {
-      this.logger.debug('Received CallTool request:', request.params.name);
+      const context: MiddlewareContext = {
+        requestId: generateRequestId(),
+        timestamp: new Date(),
+        method: 'CallTool',
+        params: request.params,
+      };
 
-      switch (request.params.name) {
-        case 'health_check':
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify(
-                  {
-                    status: 'healthy',
-                    serverName: this.config.serverName,
-                    version: this.config.serverVersion,
-                    uptime: process.uptime(),
-                    timestamp: new Date().toISOString(),
-                  },
-                  null,
-                  2,
-                ),
-              },
-            ],
-          };
+      return errorHandlingMiddleware(async () => {
+        this.logger.debug(
+          `[${context.requestId}] Received CallTool request:`,
+          request.params.name,
+        );
 
-        default:
-          throw new Error(`Unknown tool: ${request.params.name}`);
-      }
+        switch (request.params.name) {
+          case 'health_check':
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'healthy',
+                      serverName: this.config.serverName,
+                      version: this.config.serverVersion,
+                      uptime: process.uptime(),
+                      timestamp: new Date().toISOString(),
+                      requestId: context.requestId,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+            };
+
+          default:
+            throw new NotFoundError(`Unknown tool: ${request.params.name}`);
+        }
+      }, context);
     });
 
     // List available resources
@@ -117,34 +136,47 @@ export class ProjectContextMCPServer {
 
     // Handle resource reads
     this.server.setRequestHandler(ReadResourceRequestSchema, async request => {
-      this.logger.debug('Received ReadResource request:', request.params.uri);
+      const context: MiddlewareContext = {
+        requestId: generateRequestId(),
+        timestamp: new Date(),
+        method: 'ReadResource',
+        params: request.params,
+      };
 
-      switch (request.params.uri) {
-        case 'context://server/info':
-          return {
-            contents: [
-              {
-                uri: request.params.uri,
-                mimeType: 'application/json',
-                text: JSON.stringify(
-                  {
-                    serverName: this.config.serverName,
-                    version: this.config.serverVersion,
-                    capabilities: ['resources', 'tools', 'prompts'],
-                    status: 'running',
-                    startTime: this.config.startTime,
-                    uptime: process.uptime(),
-                  },
-                  null,
-                  2,
-                ),
-              },
-            ],
-          };
+      return errorHandlingMiddleware(async () => {
+        this.logger.debug(
+          `[${context.requestId}] Received ReadResource request:`,
+          request.params.uri,
+        );
 
-        default:
-          throw new Error(`Unknown resource: ${request.params.uri}`);
-      }
+        switch (request.params.uri) {
+          case 'context://server/info':
+            return {
+              contents: [
+                {
+                  uri: request.params.uri,
+                  mimeType: 'application/json',
+                  text: JSON.stringify(
+                    {
+                      serverName: this.config.serverName,
+                      version: this.config.serverVersion,
+                      capabilities: ['resources', 'tools', 'prompts'],
+                      status: 'running',
+                      startTime: this.config.startTime,
+                      uptime: process.uptime(),
+                      requestId: context.requestId,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+            };
+
+          default:
+            throw new NotFoundError(`Unknown resource: ${request.params.uri}`);
+        }
+      }, context);
     });
 
     // List available prompts
