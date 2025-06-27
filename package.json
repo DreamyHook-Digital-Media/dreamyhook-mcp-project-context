@@ -27,6 +27,9 @@
     "typecheck:watch": "tsc --noEmit --watch",
     "format": "prettier --write src/**/*.ts",
     "format:check": "prettier --check src/**/*.ts",
+    "version:patch": "./scripts/version.sh patch",
+    "version:minor": "./scripts/version.sh minor",
+    "version:major": "./scripts/version.sh major",
     "prepare": "husky",
     "prepack": "npm run build"
   },
