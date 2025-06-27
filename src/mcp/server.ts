@@ -24,16 +24,19 @@ import {
   MiddlewareContext,
   NotFoundError,
 } from './middleware';
+import { ProjectContextResources } from './resources';
 
 export class ProjectContextMCPServer {
   private server: Server;
   private logger: ReturnType<typeof createLogger>;
   private config: ServerConfig;
+  private resources: ProjectContextResources;
   private isRunning: boolean = false;
 
   constructor(config?: Partial<ServerConfig>) {
     this.logger = createLogger('ProjectContextMCPServer', LogLevel.DEBUG);
     this.config = new ServerConfig(config);
+    this.resources = new ProjectContextResources(this.config);
 
     // Initialize MCP server
     this.server = new Server(
@@ -121,17 +124,31 @@ export class ProjectContextMCPServer {
 
     // List available resources
     this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
-      this.logger.debug('Received ListResources request');
-      return {
-        resources: [
-          {
-            uri: 'context://server/info',
-            name: 'Server Information',
-            description: 'Basic server information and configuration',
-            mimeType: 'application/json',
-          },
-        ],
+      const context: MiddlewareContext = {
+        requestId: generateRequestId(),
+        timestamp: new Date(),
+        method: 'ListResources',
       };
+
+      return errorHandlingMiddleware(async () => {
+        this.logger.debug(
+          `[${context.requestId}] Received ListResources request`,
+        );
+
+        const projectResources = await this.resources.listResources();
+
+        // Add server info resource
+        const serverInfoResource = {
+          uri: 'context://server/info',
+          name: 'Server Information',
+          description: 'Basic server information and configuration',
+          mimeType: 'application/json',
+        };
+
+        return {
+          resources: [serverInfoResource, ...projectResources],
+        };
+      }, context);
     });
 
     // Handle resource reads
@@ -149,33 +166,33 @@ export class ProjectContextMCPServer {
           request.params.uri,
         );
 
-        switch (request.params.uri) {
-          case 'context://server/info':
-            return {
-              contents: [
-                {
-                  uri: request.params.uri,
-                  mimeType: 'application/json',
-                  text: JSON.stringify(
-                    {
-                      serverName: this.config.serverName,
-                      version: this.config.serverVersion,
-                      capabilities: ['resources', 'tools', 'prompts'],
-                      status: 'running',
-                      startTime: this.config.startTime,
-                      uptime: process.uptime(),
-                      requestId: context.requestId,
-                    },
-                    null,
-                    2,
-                  ),
-                },
-              ],
-            };
-
-          default:
-            throw new NotFoundError(`Unknown resource: ${request.params.uri}`);
+        // Handle server info resource
+        if (request.params.uri === 'context://server/info') {
+          return {
+            contents: [
+              {
+                uri: request.params.uri,
+                mimeType: 'application/json',
+                text: JSON.stringify(
+                  {
+                    serverName: this.config.serverName,
+                    version: this.config.serverVersion,
+                    capabilities: ['resources', 'tools', 'prompts'],
+                    status: 'running',
+                    startTime: this.config.startTime,
+                    uptime: process.uptime(),
+                    requestId: context.requestId,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
         }
+
+        // Delegate to project resources
+        return await this.resources.readResource(request.params.uri);
       }, context);
     });
 
