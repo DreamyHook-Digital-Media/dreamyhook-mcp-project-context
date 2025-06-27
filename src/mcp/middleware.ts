@@ -13,7 +13,7 @@ export interface MiddlewareContext {
   requestId: string;
   timestamp: Date;
   method: string;
-  params?: any;
+  params?: unknown;
 }
 
 /**
@@ -21,8 +21,8 @@ export interface MiddlewareContext {
  */
 export function requestLoggingMiddleware(
   context: MiddlewareContext,
-  next: () => Promise<any>,
-): Promise<any> {
+  next: () => Promise<unknown>,
+): Promise<unknown> {
   const startTime = Date.now();
 
   logger.debug(`[${context.requestId}] ${context.method} - Started`, {
@@ -86,14 +86,15 @@ export function errorHandlingMiddleware<T>(
  * Validation middleware
  */
 export function validationMiddleware(
-  schema: any,
-  data: any,
+  schema: Record<string, unknown>,
+  data: Record<string, unknown>,
   context: MiddlewareContext,
 ): void {
   try {
     // Basic validation for required fields
-    if (schema.required) {
-      for (const field of schema.required) {
+    const required = schema['required'];
+    if (Array.isArray(required)) {
+      for (const field of required) {
         if (!(field in data)) {
           throw new ValidationError(`Missing required field: ${field}`);
         }
@@ -101,14 +102,16 @@ export function validationMiddleware(
     }
 
     // Type validation
-    if (schema.properties) {
+    const properties = schema['properties'];
+    if (properties && typeof properties === 'object') {
       for (const [key, value] of Object.entries(data)) {
-        const fieldSchema = schema.properties[key];
-        if (fieldSchema && fieldSchema.type) {
+        const fieldSchema = (properties as Record<string, unknown>)[key];
+        if (fieldSchema && typeof fieldSchema === 'object' && fieldSchema !== null) {
+          const schemaObj = fieldSchema as Record<string, unknown>;
           const actualType = typeof value;
-          const expectedType = fieldSchema.type;
+          const expectedType = schemaObj['type'];
 
-          if (actualType !== expectedType) {
+          if (expectedType && actualType !== expectedType) {
             throw new ValidationError(
               `Invalid type for field ${key}: expected ${expectedType}, got ${actualType}`,
             );
@@ -116,10 +119,10 @@ export function validationMiddleware(
         }
       }
     }
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(`Validation failed for ${context.method}:`, {
       requestId: context.requestId,
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
       data,
       schema,
     });

@@ -25,33 +25,27 @@ import {
   NotFoundError,
 } from './middleware';
 import { ProjectContextResources } from './resources';
+import { ProjectContextTools } from './tools';
 
 export class ProjectContextMCPServer {
   private server: Server;
   private logger: ReturnType<typeof createLogger>;
   private config: ServerConfig;
   private resources: ProjectContextResources;
+  private tools: ProjectContextTools;
   private isRunning: boolean = false;
 
   constructor(config?: Partial<ServerConfig>) {
     this.logger = createLogger('ProjectContextMCPServer', LogLevel.DEBUG);
     this.config = new ServerConfig(config);
     this.resources = new ProjectContextResources(this.config);
+    this.tools = new ProjectContextTools(this.config);
 
     // Initialize MCP server
-    this.server = new Server(
-      {
-        name: this.config.serverName,
-        version: this.config.serverVersion,
-      },
-      {
-        capabilities: {
-          resources: {},
-          tools: {},
-          prompts: {},
-        },
-      },
-    );
+    this.server = new Server({
+      name: this.config.serverName,
+      version: this.config.serverVersion,
+    });
 
     this.setupHandlers();
     this.logger.debug('MCP Server initialized');
@@ -63,20 +57,32 @@ export class ProjectContextMCPServer {
   private setupHandlers(): void {
     // List available tools
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      this.logger.debug('Received ListTools request');
-      return {
-        tools: [
-          {
-            name: 'health_check',
-            description: 'Check server health and status',
-            inputSchema: {
-              type: 'object',
-              properties: {},
-              required: [],
-            },
-          },
-        ],
+      const context: MiddlewareContext = {
+        requestId: generateRequestId(),
+        timestamp: new Date(),
+        method: 'ListTools',
       };
+
+      return errorHandlingMiddleware(async () => {
+        this.logger.debug(`[${context.requestId}] Received ListTools request`);
+
+        const projectTools = await this.tools.listTools();
+
+        // Add server health check tool
+        const healthCheckTool = {
+          name: 'health_check',
+          description: 'Check server health and status',
+          inputSchema: {
+            type: 'object',
+            properties: {},
+            required: [],
+          },
+        };
+
+        return {
+          tools: [healthCheckTool, ...projectTools],
+        };
+      }, context);
     });
 
     // Handle tool calls
@@ -117,7 +123,11 @@ export class ProjectContextMCPServer {
             };
 
           default:
-            throw new NotFoundError(`Unknown tool: ${request.params.name}`);
+            // Delegate to project tools
+            return await this.tools.executeTool(
+              request.params.name,
+              request.params.arguments || {},
+            );
         }
       }, context);
     });

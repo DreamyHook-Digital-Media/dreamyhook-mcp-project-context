@@ -47,7 +47,7 @@ export class ServerConfig {
       options.serverName || packageInfo.name || 'project-context-mcp-server';
     this.serverVersion =
       options.serverVersion || packageInfo.version || '0.0.0';
-    this.logLevel = options.logLevel || process.env.LOG_LEVEL || 'info';
+    this.logLevel = options.logLevel || process.env['LOG_LEVEL'] || 'info';
     this.projectPath = options.projectPath || process.cwd();
     this.cacheEnabled = options.cacheEnabled ?? true;
     this.cacheTTL = options.cacheTTL || 300000; // 5 minutes default
@@ -73,16 +73,21 @@ export class ServerConfig {
    * Create configuration from environment variables
    */
   static fromEnvironment(): ServerConfig {
-    return new ServerConfig({
-      logLevel: process.env.LOG_LEVEL,
-      projectPath: process.env.PROJECT_PATH,
-      cacheEnabled:
-        process.env.CACHE_ENABLED !== undefined
-          ? process.env.CACHE_ENABLED === 'true'
-          : undefined,
-      cacheTTL: process.env.CACHE_TTL
-        ? parseInt(process.env.CACHE_TTL, 10)
-        : undefined,
-    });
+    const envLogLevel = process.env['LOG_LEVEL'];
+    const envProjectPath = process.env['PROJECT_PATH'];
+    const envCacheEnabled = process.env['CACHE_ENABLED'];
+    const envCacheTTL = process.env['CACHE_TTL'];
+
+    const config: Partial<ServerConfigOptions> = {};
+    if (envLogLevel) config.logLevel = envLogLevel;
+    if (envProjectPath) config.projectPath = envProjectPath;
+    if (envCacheEnabled !== undefined) {
+      config.cacheEnabled = envCacheEnabled.toLowerCase() === 'true';
+    }
+    if (envCacheTTL) {
+      config.cacheTTL = parseInt(envCacheTTL, 10);
+    }
+
+    return new ServerConfig(config);
   }
 }

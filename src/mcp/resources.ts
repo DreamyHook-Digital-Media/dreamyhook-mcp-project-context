@@ -295,14 +295,15 @@ export class ProjectContextResources {
     // Get Git information
     const gitInfo = await this.getGitInfo(projectPath);
 
+    const framework = await this.detectFramework(packageInfo);
     const overview: ProjectOverview = {
       name:
-        packageInfo.name || projectPath.split('/').pop() || 'Unknown Project',
-      version: packageInfo.version || '0.0.0',
-      description: packageInfo.description || 'No description available',
+        (packageInfo['name'] as string) || projectPath.split('/').pop() || 'Unknown Project',
+      version: (packageInfo['version'] as string) || '0.0.0',
+      description: (packageInfo['description'] as string) || 'No description available',
       path: projectPath,
       language: await this.detectPrimaryLanguage(projectPath),
-      framework: await this.detectFramework(packageInfo),
+      ...(framework && { framework }),
       packageManager: await this.detectPackageManager(projectPath),
       lastModified: stats.lastModified,
       fileCount: stats.fileCount,
@@ -505,26 +506,26 @@ export class ProjectContextResources {
       ([, a], [, b]) => b - a,
     )[0]?.[0];
 
-    return primaryExtension ? languageMap[primaryExtension] : 'Unknown';
+    return primaryExtension ? (languageMap[primaryExtension] || 'Unknown') : 'Unknown';
   }
 
   private async detectFramework(
     packageInfo: Record<string, unknown>,
   ): Promise<string | undefined> {
     const dependencies = {
-      ...packageInfo.dependencies,
-      ...packageInfo.devDependencies,
+      ...(packageInfo['dependencies'] as Record<string, unknown> || {}),
+      ...(packageInfo['devDependencies'] as Record<string, unknown> || {}),
     };
 
-    if (dependencies.react) return 'React';
-    if (dependencies.vue) return 'Vue.js';
-    if (dependencies.angular) return 'Angular';
-    if (dependencies.svelte) return 'Svelte';
-    if (dependencies.express) return 'Express.js';
-    if (dependencies.fastify) return 'Fastify';
-    if (dependencies.nest || dependencies['@nestjs/core']) return 'NestJS';
-    if (dependencies.next) return 'Next.js';
-    if (dependencies.nuxt) return 'Nuxt.js';
+    if (dependencies['react']) return 'React';
+    if (dependencies['vue']) return 'Vue.js';
+    if (dependencies['angular']) return 'Angular';
+    if (dependencies['svelte']) return 'Svelte';
+    if (dependencies['express']) return 'Express.js';
+    if (dependencies['fastify']) return 'Fastify';
+    if (dependencies['nest'] || dependencies['@nestjs/core']) return 'NestJS';
+    if (dependencies['next']) return 'Next.js';
+    if (dependencies['nuxt']) return 'Nuxt.js';
 
     return undefined;
   }
@@ -558,7 +559,7 @@ export class ProjectContextResources {
     try {
       // Check if .git directory exists
       await fs.access(join(projectPath, '.git'));
-      gitInfo.gitRepository = 'Local Git Repository';
+      gitInfo['gitRepository'] = 'Local Git Repository';
 
       // Try to read basic Git info (simplified)
       try {
@@ -567,8 +568,8 @@ export class ProjectContextResources {
           'utf-8',
         );
         const match = headContent.match(/ref: refs\/heads\/(.+)/);
-        if (match) {
-          gitInfo.gitBranch = match[1].trim();
+        if (match && match[1]) {
+          gitInfo['gitBranch'] = match[1].trim();
         }
       } catch (_error) {
         // Ignore errors reading Git info
